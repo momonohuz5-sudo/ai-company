@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import requests
 import time
+import uuid
 
-from .models import Scene
+from .models import Scene, PromptBlock
 from .logger import PrivacySafeLogger
+from .storage import Storage
 
 
 class ComfyUIClient:
@@ -35,11 +37,12 @@ class ComfyUIClient:
         self.logger = logger
         self.api_key = api_key
 
-    def submit_scene(self, scene: Scene) -> Optional[str]:
-        """Submit a single scene to ComfyUI.
+    def submit_scene_with_workflow(self, scene: Scene, workflow: Dict[str, Any]) -> Optional[str]:
+        """Submit a single scene to ComfyUI with workflow.
 
         Args:
             scene: Scene to submit
+            workflow: Complete ComfyUI workflow
 
         Returns:
             Job ID if submitted (None in dry-run mode)
@@ -47,26 +50,27 @@ class ComfyUIClient:
         Privacy Note:
             Logs only scene_no and block IDs, never content.
         """
-        payload = self._build_payload(scene)
+        client_id = str(uuid.uuid4())
+
+        payload = {
+            "prompt": workflow,
+            "client_id": client_id
+        }
 
         if self.dry_run:
             self.logger.log_api_submission(scene.scene_no, dry_run=True)
             self.logger.debug(
-                f"DRY-RUN: Payload structure for scene {scene.scene_no:03d}: "
-                f"quality={scene.quality_id}, character={scene.character_id}, "
-                f"setting={scene.setting_id}, lighting={scene.lighting_id}, "
-                f"camera={scene.camera_id}, private=OPAQUE, negative=OPAQUE, "
-                f"seed={scene.seed}"
+                f"DRY-RUN: Would submit scene {scene.scene_no:03d} with workflow to {self.endpoint}/prompt"
             )
-            return None
+            return f"dry_run_{scene.scene_no}"
 
         try:
-            headers = {}
+            headers = {"Content-Type": "application/json"}
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
 
             response = requests.post(
-                f"{self.endpoint}/api/queue",
+                f"{self.endpoint}/prompt",
                 json=payload,
                 headers=headers,
                 timeout=self.timeout
@@ -75,11 +79,11 @@ class ComfyUIClient:
             response.raise_for_status()
 
             result = response.json()
-            job_id = result.get("job_id") or result.get("prompt_id")
+            prompt_id = result.get("prompt_id")
 
-            self.logger.log_api_submission(scene.scene_no, job_id)
+            self.logger.log_api_submission(scene.scene_no, prompt_id)
 
-            return job_id
+            return prompt_id
 
         except requests.RequestException as e:
             self.logger.error(
@@ -87,24 +91,36 @@ class ComfyUIClient:
             )
             raise
 
-    def submit_batch(self, scenes: List[Scene]) -> List[Optional[str]]:
-        """Submit multiple scenes to ComfyUI.
+    def submit_batch_with_workflows(
+        self,
+        scenes: List[Scene],
+        workflows: List[Dict[str, Any]]
+    ) -> List[Optional[str]]:
+        """Submit multiple scenes to ComfyUI with workflows.
 
         Args:
             scenes: List of scenes to submit
+            workflows: List of workflows (one per scene)
 
         Returns:
-            List of job IDs (None for failed submissions or dry-run)
+            List of job IDs (None for failed submissions)
 
         Privacy Note:
             Each scene submission is privacy-safe.
         """
+        if len(scenes) != len(workflows):
+            raise ValueError(f"Scene count ({len(scenes)}) must match workflow count ({len(workflows)})")
+
         job_ids = []
 
-        for scene in scenes:
+        for scene, workflow in zip(scenes, workflows):
             try:
-                job_id = self.submit_scene(scene)
+                job_id = self.submit_scene_with_workflow(scene, workflow)
                 job_ids.append(job_id)
+
+                if not self.dry_run:
+                    time.sleep(0.5)
+
             except Exception as e:
                 self.logger.error(
                     f"Scene {scene.scene_no:03d} submission failed: {type(e).__name__}"
@@ -112,7 +128,7 @@ class ComfyUIClient:
                 job_ids.append(None)
 
         total = len(scenes)
-        success = sum(1 for jid in job_ids if jid is not None or self.dry_run)
+        success = sum(1 for jid in job_ids if jid is not None)
 
         self.logger.info(f"Batch submission completed: {success}/{total} scenes")
 
@@ -152,29 +168,26 @@ class ComfyUIClient:
             self.logger.error(f"Failed to get job status {job_id}: {type(e).__name__}")
             raise
 
-    def _build_payload(self, scene: Scene) -> Dict[str, Any]:
-        """Build API payload for scene.
-
-        Args:
-            scene: Scene to build payload for
+    def check_connection(self) -> bool:
+        """Check if ComfyUI server is reachable.
 
         Returns:
-            Payload dict
-
-        Privacy Note:
-            This is a placeholder. Actual implementation depends on ComfyUI workflow.
-            Real implementation would load private blocks from disk (outside tool scope).
+            True if server is reachable
         """
-        return {
-            "work_id": scene.work_id,
-            "scene_no": scene.scene_no,
-            "quality_id": scene.quality_id,
-            "character_id": scene.character_id,
-            "setting_id": scene.setting_id,
-            "lighting_id": scene.lighting_id,
-            "camera_id": scene.camera_id,
-            "private_id": scene.private_id,
-            "negative_id": scene.negative_id,
-            "seed": scene.seed,
-            "output_dir": scene.output_dir
-        }
+        if self.dry_run:
+            self.logger.info("DRY-RUN: Skipping connection check")
+            return True
+
+        try:
+            response = requests.get(
+                f"{self.endpoint}/system_stats",
+                timeout=5
+            )
+            response.raise_for_status()
+            self.logger.info(f"✓ Connected to ComfyUI at {self.endpoint}")
+            return True
+        except requests.RequestException as e:
+            self.logger.warning(
+                f"Cannot connect to ComfyUI at {self.endpoint}: {type(e).__name__}"
+            )
+            return False

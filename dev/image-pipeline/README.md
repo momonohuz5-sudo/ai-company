@@ -2,6 +2,8 @@
 
 A general-purpose AI image production pipeline tool that integrates with ComfyUI for managing artwork creation from planning through final packaging, with strict privacy controls for sensitive content.
 
+**📖 [Quick Start Guide](QUICKSTART.md) - 5分で画像生成まで！**
+
 ## Features
 
 - **Work-based Organization**: Manage multiple projects with independent configurations
