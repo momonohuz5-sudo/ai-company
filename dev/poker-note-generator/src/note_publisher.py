@@ -160,7 +160,18 @@ class NotePublisher:
                     is_publish=True,  # 即座に公開
                 )
 
-                self.logger.info(f"✓ Successfully published: {result.get('url')}")
+                # デバッグ: レスポンス全体をログ出力
+                self.logger.info(f"NoteClient2 response: {result}")
+
+                # URLを取得（レスポンス構造に応じて調整）
+                url = result.get('url') or result.get('note_url') or result.get('article_url')
+                note_id = result.get('id') or result.get('note_id') or result.get('key')
+
+                self.logger.info(f"✓ Successfully published!")
+                if url:
+                    self.logger.info(f"  URL: {url}")
+                if note_id:
+                    self.logger.info(f"  ID: {note_id}")
             finally:
                 # 一時ファイルを削除
                 import os
@@ -168,8 +179,8 @@ class NotePublisher:
 
             return {
                 "success": True,
-                "url": result.get("url"),
-                "note_id": result.get("id"),
+                "url": url,
+                "note_id": note_id,
                 "error": None,
             }
 

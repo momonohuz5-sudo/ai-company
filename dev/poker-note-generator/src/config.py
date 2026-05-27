@@ -18,7 +18,7 @@ class Config:
     # note設定
     NOTE_EMAIL = os.getenv("NOTE_EMAIL", "")
     NOTE_PASSWORD = os.getenv("NOTE_PASSWORD", "")
-    NOTE_USER_URL_ID = os.getenv("NOTE_USER_URL_ID", "")
+    NOTE_USER_URLNAME = os.getenv("NOTE_USER_URLNAME", "")
     NOTE_MAGAZINE_ID = os.getenv("NOTE_MAGAZINE_ID", "")
     NOTE_ARTICLE_PRICE = int(os.getenv("NOTE_ARTICLE_PRICE", "500"))
 
