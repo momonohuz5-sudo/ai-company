@@ -1,0 +1,54 @@
+title: AI Tech Insights
+description: AI技術とトレンド商品の情報サイト - アフィリエイト収益化ブログ
+baseurl: "/ai-company"
+url: "https://momonohuz5-sudo.github.io"
+
+# Theme
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# Language
+lang: ja
+
+# Pagination
+paginate: 10
+paginate_path: "/page:num/"
+
+# Markdown
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Permalink
+permalink: /:year/:month/:day/:title/
+
+# Show excerpts
+show_excerpts: true
+
+# Social
+twitter_username: ai_tech_insights
+github_username: momonohuz5-sudo
+
+# Analytics (optional - add later)
+# google_analytics: UA-XXXXXXXXX-X
+
+# Affiliate settings (used by templates)
+amazon_affiliate_id: "your-amazon-id"
+rakuten_affiliate_id: "your-rakuten-id"
+
+# Collection
+collections:
+  posts:
+    output: true
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      author: "AI Tech Insights"
