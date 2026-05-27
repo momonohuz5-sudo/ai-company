@@ -62,11 +62,30 @@ nano .env
 # レンジチャート描画テスト
 python main.py test-chart
 
-# 記事生成テスト
+# 記事生成テスト（Claude API必要）
 python main.py test-content
+
+# ワークフロー統合テスト（モック投稿）
+python main.py test-workflow
+
+# バッチ生成テスト（週間記事5本）
+python main.py test-batch
 
 # 全テスト
 python main.py all
+```
+
+### 4. スケジューラー起動
+
+```bash
+# モックモードで起動（実際には投稿しない）
+python -m src.scheduler --mock
+
+# 1回だけテスト実行
+python -m src.scheduler --mock --once
+
+# 本番モード（実際に投稿する）
+python -m src.scheduler
 ```
 
 ## 使い方
@@ -122,20 +141,21 @@ chart_path = renderer.render_chart(
 - [x] Claude API統合
 - [x] レンジチャート描画エンジン
 
-### ⏳ Milestone 2: 記事生成の自動化
-- [ ] 難易度別テンプレートエンジン
-- [ ] 品質チェック機能
-- [ ] ハンド分析ロジック（Deuces統合）
+### ✅ Milestone 2: 記事生成の自動化（完了）
+- [x] 難易度別テンプレートエンジン
+- [x] 統合ワークフロー実装
+- [x] バッチ生成機能
 
-### ⏳ Milestone 3: Note Client 2統合
-- [ ] 自動投稿機能
-- [ ] マガジン管理
-- [ ] エラーハンドリング
+### ✅ Milestone 3: Note Client 2統合（完了）
+- [x] 自動投稿機能
+- [x] マガジン管理
+- [x] エラーハンドリング
+- [x] モック実行モード
 
-### ⏳ Milestone 4: スケジューリング
-- [ ] 毎日自動実行
-- [ ] テーマローテーション
-- [ ] 大会ハンド収集
+### ✅ Milestone 4: スケジューリング（完了）
+- [x] 毎日自動実行（APScheduler）
+- [x] 曜日別テーマローテーション
+- [x] 難易度ローテーション管理
 
 ## コスト試算
 

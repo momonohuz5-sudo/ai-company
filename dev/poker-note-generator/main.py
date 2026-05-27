@@ -106,6 +106,72 @@ def test_range_chart():
         traceback.print_exc()
 
 
+def test_workflow():
+    """ワークフロー統合テスト（モック投稿）"""
+    print("=== ワークフロー統合テスト ===\n")
+
+    try:
+        from src.workflow import ArticleWorkflow
+
+        # モックモードで実行（実際には投稿しない）
+        workflow = ArticleWorkflow(use_mock=True)
+
+        print("記事生成・投稿ワークフロー実行中...\n")
+        result = workflow.generate_and_publish(
+            topic="プリフロップレンジの基本",
+            difficulty=1,
+            specific_scenario="BTNからのオープンレイズ戦略",
+            hashtags=["ポーカー", "ポーカー戦略", "初心者"],
+            publish_immediately=True,
+        )
+
+        if result["success"]:
+            print("\n✓ ワークフロー完了\n")
+            print(f"タイトル: {result['article']['title']}")
+            print(f"note URL: {result['note_url']}")
+            print(f"生成チャート: {len(result['chart_paths'])}枚")
+        else:
+            print(f"\n✗ ワークフローエラー: {result['error']}")
+
+    except Exception as e:
+        print(f"✗ エラー: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+def test_batch_generation():
+    """バッチ生成テスト（週間記事5本）"""
+    print("=== バッチ生成テスト（週間記事5本） ===\n")
+
+    try:
+        from src.workflow import ArticleWorkflow, WEEKLY_TOPICS
+
+        # 最初の3本のみテスト
+        test_topics = WEEKLY_TOPICS[:3]
+
+        workflow = ArticleWorkflow(use_mock=True)
+        print(f"{len(test_topics)}本の記事を生成中...\n")
+
+        results = workflow.batch_generate(
+            topics=test_topics,
+            publish=True,
+        )
+
+        # サマリー
+        print("\n" + "="*60)
+        print("バッチ生成結果:")
+        for i, result in enumerate(results, 1):
+            status = "✓" if result["success"] else "✗"
+            title = result["article"]["title"] if result.get("article") else "N/A"
+            print(f"{status} {i}. {title}")
+        print("="*60 + "\n")
+
+    except Exception as e:
+        print(f"✗ エラー: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def main():
     """メイン処理"""
     import argparse
@@ -113,7 +179,7 @@ def main():
     parser = argparse.ArgumentParser(description="ポーカー戦略note記事生成システム")
     parser.add_argument(
         "mode",
-        choices=["test-content", "test-chart", "all"],
+        choices=["test-content", "test-chart", "test-workflow", "test-batch", "all"],
         help="実行モード"
     )
 
@@ -123,10 +189,16 @@ def main():
         test_content_generation()
     elif args.mode == "test-chart":
         test_range_chart()
+    elif args.mode == "test-workflow":
+        test_workflow()
+    elif args.mode == "test-batch":
+        test_batch_generation()
     elif args.mode == "all":
         test_range_chart()
         print("\n" + "="*50 + "\n")
         test_content_generation()
+        print("\n" + "="*50 + "\n")
+        test_workflow()
 
 
 if __name__ == "__main__":
