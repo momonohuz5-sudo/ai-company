@@ -14,11 +14,11 @@ from .config import Config
 
 # Note Client 2は条件付きインポート
 try:
-    from noteclient2 import NoteClient
+    from NoteClient2 import NoteClient2
     NOTE_CLIENT_AVAILABLE = True
 except ImportError:
     NOTE_CLIENT_AVAILABLE = False
-    logging.warning("noteclient2 is not installed. Auto-posting is disabled.")
+    logging.warning("NoteClient2 is not installed. Auto-posting is disabled.")
 
 
 class NotePublisher:
@@ -28,14 +28,14 @@ class NotePublisher:
         self,
         email: Optional[str] = None,
         password: Optional[str] = None,
-        user_url_id: Optional[str] = None,
+        user_urlname: Optional[str] = None,
     ):
         """初期化
 
         Args:
             email: noteログインメールアドレス
             password: noteログインパスワード
-            user_url_id: noteユーザーID（プロフィールURLの末尾）
+            user_urlname: noteユーザーID（プロフィールURLの末尾）
         """
         if not NOTE_CLIENT_AVAILABLE:
             raise ImportError(
@@ -45,9 +45,9 @@ class NotePublisher:
 
         self.email = email or Config.NOTE_EMAIL
         self.password = password or Config.NOTE_PASSWORD
-        self.user_url_id = user_url_id or Config.NOTE_USER_URL_ID
+        self.user_urlname = user_urlname or Config.NOTE_USER_URL_ID
 
-        if not all([self.email, self.password, self.user_url_id]):
+        if not all([self.email, self.password, self.user_urlname]):
             raise ValueError(
                 "note credentials are required. "
                 "Set NOTE_EMAIL, NOTE_PASSWORD, NOTE_USER_URL_ID in .env"
@@ -64,10 +64,10 @@ class NotePublisher:
         """
         try:
             self.logger.info("Logging in to note...")
-            self.client = NoteClient(
+            self.client = NoteClient2(
                 email=self.email,
                 password=self.password,
-                user_url_id=self.user_url_id
+                user_urlname=self.user_urlname
             )
             self.logger.info("✓ Successfully logged in to note")
             return True
@@ -139,20 +139,32 @@ class NotePublisher:
                 content += "\n\n---\n\n"
                 content += " ".join([f"#{tag}" for tag in hashtags])
 
-            # 記事投稿
-            self.logger.info("Posting article to note...")
+            # 一時ファイルにMarkdownを保存
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
+                f.write(content)
+                temp_md_path = f.name
 
-            # Note Client 2のAPIに従って投稿
-            # 実際のAPIメソッド名は実装により異なる可能性あり
-            result = self.client.post_article(
-                title=title,
-                body=content,
-                price=price if price > 0 else None,
-                magazine_id=magazine_id or Config.NOTE_MAGAZINE_ID,
-                publish_at=publish_at,
-            )
+            try:
+                # 記事投稿
+                self.logger.info("Posting article to note...")
 
-            self.logger.info(f"✓ Successfully published: {result.get('url')}")
+                # Note Client 2のAPIに従って投稿
+                result = self.client.publish(
+                    title=title,
+                    md_file_path=temp_md_path,
+                    eyecatch_path=str(images[0]) if images else None,
+                    hashtags=hashtags,
+                    price=price if price > 0 else 0,
+                    magazine_key=None,  # マガジンは後で設定
+                    is_publish=True,  # 即座に公開
+                )
+
+                self.logger.info(f"✓ Successfully published: {result.get('url')}")
+            finally:
+                # 一時ファイルを削除
+                import os
+                os.unlink(temp_md_path)
 
             return {
                 "success": True,
@@ -244,7 +256,7 @@ class MockNotePublisher(NotePublisher):
         self.logger = logging.getLogger(__name__)
         self.email = Config.NOTE_EMAIL
         self.password = "***"
-        self.user_url_id = Config.NOTE_USER_URL_ID
+        self.user_urlname = Config.NOTE_USER_URL_ID
 
     def login(self) -> bool:
         """モックログイン"""
@@ -262,7 +274,7 @@ class MockNotePublisher(NotePublisher):
         output_path = Config.BACKUP_DIR / f"{timestamp}_{title[:30]}.md"
         self.export_as_markdown(title, content, output_path)
 
-        mock_url = f"https://note.com/{self.user_url_id}/n/mock{timestamp}"
+        mock_url = f"https://note.com/{self.user_urlname}/n/mock{timestamp}"
 
         return {
             "success": True,
