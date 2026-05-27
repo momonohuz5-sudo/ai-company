@@ -45,12 +45,12 @@ class NotePublisher:
 
         self.email = email or Config.NOTE_EMAIL
         self.password = password or Config.NOTE_PASSWORD
-        self.user_urlname = user_urlname or Config.NOTE_USER_URL_ID
+        self.user_urlname = user_urlname or Config.NOTE_USER_URLNAME
 
         if not all([self.email, self.password, self.user_urlname]):
             raise ValueError(
                 "note credentials are required. "
-                "Set NOTE_EMAIL, NOTE_PASSWORD, NOTE_USER_URL_ID in .env"
+                "Set NOTE_EMAIL, NOTE_PASSWORD, NOTE_USER_URLNAME in .env"
             )
 
         self.client = None
@@ -267,7 +267,7 @@ class MockNotePublisher(NotePublisher):
         self.logger = logging.getLogger(__name__)
         self.email = Config.NOTE_EMAIL
         self.password = "***"
-        self.user_urlname = Config.NOTE_USER_URL_ID
+        self.user_urlname = Config.NOTE_USER_URLNAME
 
     def login(self) -> bool:
         """モックログイン"""
