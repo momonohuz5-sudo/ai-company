@@ -1,0 +1,39 @@
+# AI Company Affiliate Blog
+title: AI Tech Insights
+description: AI技術とトレンド商品の最新情報を自動でお届け
+author: AI Company
+email: momonohuz5@gmail.com
+
+# Build settings
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# SEO settings
+lang: ja
+timezone: Asia/Tokyo
+
+# Pagination
+paginate: 10
+paginate_path: "/page:num/"
+
+# Social links
+github_username: momonohuz5-sudo
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+
+# Default front matter
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      author: "AI Company"
