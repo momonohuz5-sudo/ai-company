@@ -1,0 +1,28 @@
+# Private content - NEVER commit
+data/private/
+
+# Generated outputs
+output/
+logs/
+*.log
+
+# Work data
+data/works/
+data/scenes/
+
+# User config
+config/settings.yaml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
