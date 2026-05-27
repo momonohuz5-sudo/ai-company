@@ -1,0 +1,56 @@
+# ComfyUI Image Production Pipeline - Configuration Template
+# Copy this file to settings.yaml and customize for your setup
+
+comfyui:
+  # ComfyUI API endpoint
+  endpoint: "http://localhost:8188"
+
+  # Optional API key for authentication
+  api_key: null
+
+  # Request timeout in seconds
+  timeout: 300
+
+  # Dry-run mode (true = no actual API calls, false = production)
+  dry_run: true
+
+paths:
+  # Data directory for works, blocks, scenes
+  # Relative to project root or absolute path
+  data_dir: "data"
+
+  # Output directory for generated images
+  output_dir: "output"
+
+  # Logs directory
+  logs_dir: "logs"
+
+  # Private directory (NEVER commit this to git!)
+  private_dir: "data/private"
+
+generation:
+  # Default starting seed value
+  default_seed_start: 1000
+
+  # Seed increment for sequential scenes
+  seed_increment: 1
+
+packaging:
+  # Starting number for renumbered images
+  renumber_start: 1
+
+  # Number of sample images to extract
+  sample_count: 5
+
+  # Create ZIP package automatically
+  create_zip: true
+
+  # ZIP compression method (deflate, stored, bzip2, lzma)
+  zip_compression: "deflate"
+
+privacy:
+  # NEVER log private prompt content (DO NOT CHANGE)
+  log_private_content: false
+
+  # Only log block IDs, never content (DO NOT CHANGE)
+  log_block_ids_only: true
