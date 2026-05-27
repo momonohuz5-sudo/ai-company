@@ -1,0 +1,10 @@
+anthropic>=0.40.0          # Claude API SDK
+apscheduler>=3.10.0        # スケジューリング
+deuces>=0.2.0              # ポーカーハンド評価
+matplotlib>=3.8.0          # グラフ・図表生成
+pillow>=10.0.0             # 画像処理
+playwright==1.57.0         # ブラウザ自動化（Note Client 2用）
+python-dotenv>=1.0.0       # 環境変数管理
+requests>=2.31.0           # HTTP通信
+beautifulsoup4>=4.12.0     # HTMLパース（PokerNews）
+lxml>=4.9.0                # XMLパース
