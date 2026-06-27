@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自動ポチ 管理画面</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; padding: 12px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    h1 { font-size: 17px; color: #1a1a1a; }
+    .time { font-size: 12px; color: #888; }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .card-header { display: flex; justify-content: space-between; align-items: center; }
+    .area-name { font-size: 16px; font-weight: 600; color: #222; }
+    .badge {
+      font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600;
+    }
+    .badge-ok  { background: #e8f5e9; color: #2e7d32; }
+    .badge-warn{ background: #fff8e1; color: #f57f17; }
+    .badge-full{ background: #fce4ec; color: #b71c1c; }
+    .bar-wrap { background: #ececec; border-radius: 6px; height: 7px; margin: 9px 0 7px; }
+    .bar-fill  { height: 7px; border-radius: 6px; transition: width .4s; }
+    .bar-ok   { background: #4caf50; }
+    .bar-warn { background: #ff9800; }
+    .bar-full { background: #ef5350; }
+    .card-footer { font-size: 12px; color: #888; display: flex; gap: 12px; flex-wrap: wrap; }
+    .linked-tag { font-size: 11px; color: #1565c0; background: #e3f2fd; padding: 2px 7px; border-radius: 10px; }
+    .history-toggle { font-size: 12px; color: #1976d2; cursor: pointer; margin-top: 6px; display: inline-block; }
+    .history-list { display: none; margin-top: 8px; font-size: 12px; color: #555; }
+    .history-list li { padding: 3px 0; border-bottom: 1px solid #f5f5f5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>エステ魂 自動ポチ</h1>
+    <span class="time" id="cur-time">—</span>
+  </header>
+  <div id="areas"></div>
+
+  <script>
+    async function load() {
+      const res = await fetch('/api/status');
+      const d = await res.json();
+      document.getElementById('cur-time').textContent = d.current_time;
+
+      document.getElementById('areas').innerHTML = d.areas.map(a => {
+        const pct = (a.clicks_today / 10) * 100;
+        const cls = pct >= 100 ? 'full' : pct >= 70 ? 'warn' : 'ok';
+        const label = a.remaining === 0 ? `上限到達` : `残${a.remaining}回`;
+        const linkedHtml = a.linked.length
+          ? `<span class="linked-tag">🔗 ${a.linked.map(k=>k).join('・')} と同時</span>`
+          : '';
+        return `
+          <div class="card">
+            <div class="card-header">
+              <span class="area-name">${a.name}</span>
+              <span class="badge badge-${cls}">${label}</span>
+            </div>
+            <div class="bar-wrap"><div class="bar-fill bar-${cls}" style="width:${pct}%"></div></div>
+            <div class="card-footer">
+              <span>${a.clicks_today}/10 回</span>
+              ${a.last_click ? `<span>最終: ${a.last_click}</span>` : ''}
+              ${a.next_click ? `<span>次回: ${a.next_click}</span>` : '<span>次回: 未定</span>'}
+              ${linkedHtml}
+            </div>
+            <span class="history-toggle" onclick="toggleHistory('${a.key}', this)">▼ 履歴を見る</span>
+            <ul class="history-list" id="hist-${a.key}"></ul>
+          </div>`;
+      }).join('');
+    }
+
+    async function toggleHistory(key, el) {
+      const list = document.getElementById('hist-' + key);
+      if (list.style.display === 'block') {
+        list.style.display = 'none';
+        el.textContent = '▼ 履歴を見る';
+        return;
+      }
+      const res = await fetch('/api/history/' + key);
+      const d = await res.json();
+      list.innerHTML = d.history.length
+        ? d.history.map(h => {
+            const t = new Date(h.time).toLocaleString('ja-JP', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+            return `<li>${t} — ${h.reason}</li>`;
+          }).join('')
+        : '<li>履歴なし</li>';
+      list.style.display = 'block';
+      el.textContent = '▲ 閉じる';
+    }
+
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>
