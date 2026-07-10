@@ -12,7 +12,9 @@
    ```
 2. 本番（毎朝のRoutine）では、この環境の「環境変数」設定に下表の変数を登録する
    （`.env` はローカルで手元検証したい場合のみ使用。コミットしない）
-3. `GOOGLE_DRIVE_CREDENTIALS_JSON` にはサービスアカウントのJSONファイルの中身をそのまま1行の文字列として設定する
+3. Google Driveの認証は、組織ポリシーでサービスアカウントの鍵ファイル発行がブロックされているため、
+   OAuth(デスクトップアプリ)方式＋リフレッシュトークンを採用する
+   （OAuth Playground等で一度だけ認可し、リフレッシュトークンを取得する）
 
 ## 必要なAPIキー・認証情報（環境変数として登録）
 
@@ -21,7 +23,9 @@
 | `GEMINI_API_KEY` | Gemini画像生成 |
 | `GROK_API_KEY` | Grok画像生成（構図・ポーズのバリエーション） |
 | `RETOUCH_API_KEY` | 画像補正API（Stability AI / Photoroom等、未選定） |
-| `GOOGLE_DRIVE_CREDENTIALS_JSON` | Google Driveサービスアカウントの認証情報（JSON全体） |
+| `GOOGLE_DRIVE_CLIENT_ID` | OAuthクライアントID（デスクトップアプリ） |
+| `GOOGLE_DRIVE_CLIENT_SECRET` | OAuthクライアントシークレット |
+| `GOOGLE_DRIVE_REFRESH_TOKEN` | 上記クライアントで一度だけ認可して得たリフレッシュトークン |
 | `DRIVE_FOLDER_ID` | 保存先のGoogleドライブフォルダのID |
 
 ## 実行
