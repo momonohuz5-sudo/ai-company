@@ -2,19 +2,18 @@
 
 トレンド取得・プロンプト生成・20枚の採点・上位5枚の選定・学習分析は
 Claude自身が行うため、このスクリプトはその指示を受けて
-「画像生成」「補正」「Driveアップロード」という外部API呼び出しのみを担当する。
+「画像生成」「補正」「リポジトリへの保存」という外部API呼び出し・
+ファイル操作のみを担当する。保存後のgit commit/pushは呼び出し側(Claude)が行う。
 
 想定される呼ばれ方:
-    generated = [image_gen.generate_with_grok(prompt, n) for ...]
+    generated = run_generation_step(prompt, config.IMAGES_PER_DAY)
     top5 = <Claudeが採点して選んだ5枚>
-    for image in top5:
-        retouched = retouch.retouch(image)
-        drive_upload.upload(retouched, filename)
+    paths = run_finalize_step(top5, filenames)
 """
 
 import image_gen
 import retouch
-import drive_upload
+import repo_save
 import state_store
 
 
@@ -26,13 +25,13 @@ def run_generation_step(prompt: str, images_per_day: int) -> list[bytes]:
 
 
 def run_finalize_step(selected_images: list[bytes], filenames: list[str]) -> list[str]:
-    """選ばれた画像を補正し、Googleドライブへアップロードする。"""
-    file_ids = []
+    """選ばれた画像を補正し、リポジトリのoutputフォルダに保存する。"""
+    saved_paths = []
     for image_bytes, filename in zip(selected_images, filenames):
         retouched = retouch.retouch(image_bytes)
-        file_id = drive_upload.upload(retouched, filename)
-        file_ids.append(file_id)
-    return file_ids
+        path = repo_save.save(retouched, filename)
+        saved_paths.append(path)
+    return saved_paths
 
 
 if __name__ == "__main__":
