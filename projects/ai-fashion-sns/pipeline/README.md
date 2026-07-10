@@ -36,8 +36,10 @@ Claude Code の Routine（毎朝の定期トリガー）から呼び出す想定
 
 ## 現状
 
-`retouch.py`（Stability AI Fast Upscale）と `repo_save.py` は実装済み。
-`image_gen.py`（Gemini/Grok呼び出し）はAPIキーが揃い次第、実装する。
+`image_gen.py` / `retouch.py` / `repo_save.py` はすべて実装済み。
+GEMINI_API_KEY・GROK_API_KEYは環境変数に登録済み。STABILITY_API_KEYの取得待ち。
+モデル名（`GEMINI_MODEL` / `GROK_IMAGE_MODEL`）は各API提供元の更新頻度が高いため、
+初回実行時にエラーが出た場合は最新のドキュメントで確認・調整すること。
 
 ## 将来的な移行
 
