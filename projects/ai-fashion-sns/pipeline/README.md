@@ -10,17 +10,19 @@
    ```
    pip install -r requirements.txt
    ```
-2. `.env.example` を `.env` にコピーし、各APIキーを設定する（`.env` はコミットしない）
-3. Google Drive の保存先フォルダIDを `config.py` の `DRIVE_FOLDER_ID` に設定する
+2. 本番（毎朝のRoutine）では、この環境の「環境変数」設定に下表の変数を登録する
+   （`.env` はローカルで手元検証したい場合のみ使用。コミットしない）
+3. `GOOGLE_DRIVE_CREDENTIALS_JSON` にはサービスアカウントのJSONファイルの中身をそのまま1行の文字列として設定する
 
-## 必要なAPIキー・認証情報
+## 必要なAPIキー・認証情報（環境変数として登録）
 
 | 変数名 | 用途 |
 |---|---|
 | `GEMINI_API_KEY` | Gemini画像生成 |
 | `GROK_API_KEY` | Grok画像生成（構図・ポーズのバリエーション） |
 | `RETOUCH_API_KEY` | 画像補正API（Stability AI / Photoroom等、未選定） |
-| `GOOGLE_DRIVE_CREDENTIALS_PATH` | Google Drive APIのサービスアカウント/OAuth認証情報ファイルへのパス |
+| `GOOGLE_DRIVE_CREDENTIALS_JSON` | Google Driveサービスアカウントの認証情報（JSON全体） |
+| `DRIVE_FOLDER_ID` | 保存先のGoogleドライブフォルダのID |
 
 ## 実行
 
