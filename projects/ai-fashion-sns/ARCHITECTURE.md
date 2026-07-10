@@ -62,8 +62,17 @@ pipeline/
 - Gemini / Grok / 画像補正API / Google Drive のAPIキー・認証情報は `.env`（gitignore対象）またはこの環境のシークレットストアに保存し、リポジトリにはコミットしない。
 - `.env.example` にキー名だけを記載し、実際の値は含めない。
 
+## 実行スケジュール（設定済み）
+
+案Aを採用し、Claude Code Remote の Routine を設定済み。
+
+- Routine名: 「AIファッション自動投稿パイプライン（毎朝9時JST）」
+- trigger_id: `trig_01DVKFpgdDWHNtm1LEeKW1Nf`
+- 実行時刻: 毎朝9:00（JST）= cron `0 0 * * *`（UTC）
+- 挙動: 起動のたびに新規セッションで、まずAPIキー等の設定状況を確認。未設定なら実行せず「未設定のためスキップ」と通知するだけに留める。設定済みならパイプライン本体（トレンド取得〜Driveアップロード〜ログ保存）を実行する。
+
 ## 未確定事項（次に決めること）
 
+- 各APIキー・認証情報の取得と `.env` への設定（Gemini / Grok / 画像補正API / Google Drive）
 - いいね数の取得方法（X API読み取り連携 or 手動入力）
 - 画像補正APIの最終選定（Stability AI / Photoroom 等の実際の比較検証）
-- 実行時刻（毎朝何時に起動するか）
