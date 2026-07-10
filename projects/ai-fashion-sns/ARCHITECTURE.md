@@ -25,15 +25,24 @@
 
 ※ Googleドライブへの保存はOAuth設定が手間なため、当面リポジトリ内保存に変更した（下記「保存先について」参照）。
 
-## 実行環境: 案A（推奨） vs 案B
+## 実行環境: 案B（現在採用）に変更
 
-| | 案A: Claude Code Routine | 案B: 自前PC + cron/タスクスケジューラ |
+当初は案A（Claude Code Remote の Routine）を採用していたが、以下の2つのインフラ制約に
+繰り返しブロックされたため、**案B（ローカルPC/VS Code）に変更した**。
+
+- このクラウド環境のネットワークポリシーで `api.x.ai`（Grok）へのegressがブロックされる
+- `create_trigger` で作成したRoutineのセッションに、このリポジトリへのpush権限（source）が
+  正しく紐付かず、`git push` が403で失敗する
+
+ローカル実行なら、通常のインターネット接続とユーザー自身のGit認証を使うため、どちらの問題も発生しない。
+セットアップ手順は `projects/ai-fashion-sns/SETUP.md` を参照。
+
+| | 案A: Claude Code Routine（廃止） | 案B: 自前PC + Claude Code CLI（現在採用） |
 |---|---|---|
 | 起動条件 | PCを起動しておく必要なし | 毎朝PCが起動している必要あり |
-| APIキー管理 | この環境の環境変数として保存 | 手元のPCで完全管理 |
-| 実装の手間 | Routine（`create_trigger`）を1つ設定するだけ | スケジューラ設定＋常駐スクリプトの保守が必要 |
-
-**推奨は案A。** 毎朝 `create_trigger`（cron指定、`create_new_session_on_fire: true`）でこの環境に新規セッションを起こし、下記スクリプト群を実行させる。
+| APIキー管理 | この環境の環境変数として保存 | 手元のPCの `.env` で管理 |
+| ネットワーク制限 | あり（Grokがブロックされた） | なし |
+| git push権限 | Routineのソース設定が必要（未解決のまま） | 自分のGit認証でそのまま動く |
 
 ## モジュール構成（`projects/ai-fashion-sns/pipeline/`）
 
@@ -59,7 +68,7 @@ pipeline/
 当初はGoogleドライブへの保存を予定していたが、組織ポリシーでサービスアカウント鍵の発行がブロックされ、OAuth(デスクトップアプリ)方式も設定の手間が大きいと判断し、**当面はリポジトリ内保存（`pipeline/output/YYYY-MM-DD/`）に変更**した。
 
 - `repo_save.py` が画像をファイルとして保存する
-- 保存後、Routineがそのままgit commit & pushする（既存の仕組みをそのまま利用）
+- 保存後、Claude Code（ローカル）がそのままgit commit & pushする
 - 将来Googleドライブ等の外部ストレージに切り替えたくなった場合は、`repo_save.py` と同じインターフェース（`save(image_bytes, filename) -> str`）を持つモジュールに差し替えるだけでよい設計にしている
 
 ## 状態・学習ループの設計
@@ -70,20 +79,18 @@ pipeline/
 
 ## シークレット管理
 
-- Gemini / Grok / Stability AI のAPIキーは、この環境の環境変数として登録し、リポジトリにはコミットしない。
+- Gemini / Grok / Stability AI のAPIキーは、ローカルの `pipeline/.env` で管理し、リポジトリにはコミットしない。
 - `.env.example` にキー名だけを記載し、実際の値は含めない。
-- GEMINI_API_KEY / GROK_API_KEY は登録済み（必須）。STABILITY_API_KEY は任意（未設定なら`retouch.py`が補正をスキップし元画像をそのまま使う）。
+- STABILITY_API_KEY は任意（未設定なら`retouch.py`が補正をスキップし元画像をそのまま使う）。
 
-## 実行スケジュール（設定済み）
+## 実行スケジュール
 
-案Aを採用し、Claude Code Remote の Routine を設定済み。
-
-- Routine名: 「AIポートレート・アート作品集パイプライン（毎朝9時JST）」
-- trigger_id: `trig_01PHaSPkAPz7LDRKYYBbnVVh`
-- 実行時刻: 毎朝9:00（JST）= cron `0 0 * * *`（UTC）
-- 挙動: 起動のたびに新規セッションで、まずGEMINI_API_KEY/GROK_API_KEYの設定状況を確認。未設定なら実行せず「未設定のためスキップ」と通知するだけに留める。設定済みならパイプライン本体（アートテーマ決定〜output/保存〜git push〜ログ保存）を実行する。STABILITY_API_KEYは任意のため起動条件には含めない。
+クラウド環境のRoutine（`trig_01PHaSPkAPz7LDRKYYBbnVVh`）は上記の理由により削除済み。
+現在はローカル(VS Code)でClaude Codeを起動し、手動またはOSのタスクスケジューラで実行する
+（`SETUP.md` の手順7を参照）。
 
 ## 未確定事項（次に決めること）
 
 - STABILITY_API_KEYの取得（任意、画像補正の質を上げたくなったら対応）
 - いいね数の取得方法（X API読み取り連携 or 手動入力）
+- ローカルでの毎朝自動実行（タスクスケジューラ/cron）を実際に設定するかどうか
