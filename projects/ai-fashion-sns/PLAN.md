@@ -25,7 +25,7 @@
 | Claude | トレンド情報の要約・画像生成用プロンプトの作成、20枚の採点・上位5枚選定、投稿後の反応分析と翌日への改善提案（司令塔＋学習ループ担当）。ChatGPTの役割はここに統合し、ChatGPTは使わない |
 | Gemini（Google API） | プロンプトから画像を試作・生成 |
 | Grok（xAI API） | 構図・ポーズ違いのバリエーションを大量生成（1日20枚分） |
-| Stability AI（Fast Upscale、Meitu代替） | 選ばれた5枚の補正・高品質化 |
+| Stability AI（Fast Upscale、Meitu代替、任意） | 選ばれた5枚の補正・高品質化。未設定の間は補正なしで元画像をそのまま使う |
 | リポジトリ保存（`pipeline/repo_save.py`） | 完成した画像を `pipeline/output/` へ保存し、git pushする |
 
 ※ Claudeは画像そのものは生成できないため、画像生成はGemini/Grokが担当する。

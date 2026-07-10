@@ -11,9 +11,13 @@ STABILITY_UPSCALE_URL = "https://api.stability.ai/v2beta/stable-image/upscale/fa
 
 
 def retouch(image_bytes: bytes) -> bytes:
-    """Stability AIのFast Upscale APIで補正済みの画像を返す。"""
+    """Stability AIのFast Upscale APIで補正済みの画像を返す。
+
+    STABILITY_API_KEYが未設定の場合は補正をスキップし、元画像をそのまま返す
+    (補正は必須のステップではないため)。
+    """
     if not config.STABILITY_API_KEY:
-        raise RuntimeError("STABILITY_API_KEY が未設定です")
+        return image_bytes
 
     response = requests.post(
         STABILITY_UPSCALE_URL,

@@ -13,7 +13,7 @@
    ├─ 4. 画像生成 20枚        (Gemini API + Grok API)
    ├─ 5. 採点                (Claude, vision入力)
    ├─ 6. 上位5枚を選定        (Claude)
-   ├─ 7. 画像補正             (Stability AI Fast Upscale)
+   ├─ 7. 画像補正             (Stability AI Fast Upscale, 任意・未設定ならスキップ)
    └─ 8. リポジトリのoutput/に保存してgit push (★自動化範囲はここまで)
         │
         (X投稿はCEOが手動)
@@ -72,17 +72,18 @@ pipeline/
 
 - Gemini / Grok / Stability AI のAPIキーは、この環境の環境変数として登録し、リポジトリにはコミットしない。
 - `.env.example` にキー名だけを記載し、実際の値は含めない。
+- GEMINI_API_KEY / GROK_API_KEY は登録済み（必須）。STABILITY_API_KEY は任意（未設定なら`retouch.py`が補正をスキップし元画像をそのまま使う）。
 
 ## 実行スケジュール（設定済み）
 
 案Aを採用し、Claude Code Remote の Routine を設定済み。
 
 - Routine名: 「AIファッション自動投稿パイプライン（毎朝9時JST）」
-- trigger_id: `trig_01HQ1A9uKBdKRhouWqaNHRRG`
+- trigger_id: `trig_0174GHKyRHhvAAx5ELEKSyHc`
 - 実行時刻: 毎朝9:00（JST）= cron `0 0 * * *`（UTC）
-- 挙動: 起動のたびに新規セッションで、まずAPIキー等の設定状況を確認。未設定なら実行せず「未設定のためスキップ」と通知するだけに留める。設定済みならパイプライン本体（トレンド取得〜output/保存〜git push〜ログ保存）を実行する。
+- 挙動: 起動のたびに新規セッションで、まずGEMINI_API_KEY/GROK_API_KEYの設定状況を確認。未設定なら実行せず「未設定のためスキップ」と通知するだけに留める。設定済みならパイプライン本体（トレンド取得〜output/保存〜git push〜ログ保存）を実行する。STABILITY_API_KEYは任意のため起動条件には含めない。
 
 ## 未確定事項（次に決めること）
 
-- 各APIキーの取得と環境変数への設定（Gemini / Grok / Stability AI）
+- STABILITY_API_KEYの取得（任意、画像補正の質を上げたくなったら対応）
 - いいね数の取得方法（X API読み取り連携 or 手動入力）
