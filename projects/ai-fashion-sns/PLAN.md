@@ -25,7 +25,7 @@
 | Claude | トレンド情報の要約・画像生成用プロンプトの作成、20枚の採点・上位5枚選定、投稿後の反応分析と翌日への改善提案（司令塔＋学習ループ担当）。ChatGPTの役割はここに統合し、ChatGPTは使わない |
 | Gemini（Google API） | プロンプトから画像を試作・生成 |
 | Grok（xAI API） | 構図・ポーズ違いのバリエーションを大量生成（1日20枚分） |
-| 画像補正API（Stability AI / Photoroom 等、Meitu代替） | 選ばれた5枚の補正・高品質化 |
+| Stability AI（Fast Upscale、Meitu代替） | 選ばれた5枚の補正・高品質化 |
 | リポジトリ保存（`pipeline/repo_save.py`） | 完成した画像を `pipeline/output/` へ保存し、git pushする |
 
 ※ Claudeは画像そのものは生成できないため、画像生成はGemini/Grokが担当する。
@@ -44,7 +44,7 @@
 ## 技術メモ（Dev部門の議論より）
 
 - Gemini / Grok はいずれも公式APIで自動化可能。
-- Meitu はモバイルアプリの操作自動化ではなく、API経由の代替ツール（Cloudinary, Photoroom, Stability AI 等）に置き換える。
+- Meitu はモバイルアプリの操作自動化ではなく、API経由の代替ツール（Stability AI Fast Upscale、月額最低料金なしの従量課金）に置き換える。
 - トレンド取得は当面、一般的なWeb検索（ニュース・トレンドまとめ記事等）による近似で行う。X上の実データではないため精度・鮮度は劣るが、まずコストをかけずに検証する。
 - 最終出力はリポジトリ内の `pipeline/output/` に保存してgit pushするところまでを自動化範囲とする（X投稿・動画化は対象外）。
 - いいね数取得・学習ループは、X投稿後にCEOが手動で数値を確認する運用か、X APIの読み取りのみ利用して反応を取得するかは別途検討。

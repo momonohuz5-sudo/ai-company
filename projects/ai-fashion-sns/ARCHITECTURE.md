@@ -13,7 +13,7 @@
    ├─ 4. 画像生成 20枚        (Gemini API + Grok API)
    ├─ 5. 採点                (Claude, vision入力)
    ├─ 6. 上位5枚を選定        (Claude)
-   ├─ 7. 画像補正             (Stability AI / Photoroom 等API)
+   ├─ 7. 画像補正             (Stability AI Fast Upscale)
    └─ 8. リポジトリのoutput/に保存してgit push (★自動化範囲はここまで)
         │
         (X投稿はCEOが手動)
@@ -44,7 +44,7 @@ pipeline/
 ├── .env.example           必要な環境変数のテンプレート（実キーはコミットしない）
 ├── config.py              設定読み込み（生成枚数、保存先パスなど）
 ├── image_gen.py           Gemini/Grok APIを呼び出して画像を生成する
-├── retouch.py             画像補正API（Meitu代替）を呼び出す
+├── retouch.py             Stability AI Fast Upscale（Meitu代替）を呼び出す
 ├── repo_save.py           補正済み画像をリポジトリのoutput/に保存する
 ├── output/                保存された画像（日付ごとのフォルダ）
 ├── state_store.py         毎日の実行ログ（プロンプト・スコア・選定結果・後日の反応）を保存
@@ -70,7 +70,7 @@ pipeline/
 
 ## シークレット管理
 
-- Gemini / Grok / 画像補正API のAPIキーは、この環境の環境変数として登録し、リポジトリにはコミットしない。
+- Gemini / Grok / Stability AI のAPIキーは、この環境の環境変数として登録し、リポジトリにはコミットしない。
 - `.env.example` にキー名だけを記載し、実際の値は含めない。
 
 ## 実行スケジュール（設定済み）
@@ -78,12 +78,11 @@ pipeline/
 案Aを採用し、Claude Code Remote の Routine を設定済み。
 
 - Routine名: 「AIファッション自動投稿パイプライン（毎朝9時JST）」
-- trigger_id: `trig_01STLGpm9thZ3hELeyUGgswT`
+- trigger_id: `trig_01HQ1A9uKBdKRhouWqaNHRRG`
 - 実行時刻: 毎朝9:00（JST）= cron `0 0 * * *`（UTC）
 - 挙動: 起動のたびに新規セッションで、まずAPIキー等の設定状況を確認。未設定なら実行せず「未設定のためスキップ」と通知するだけに留める。設定済みならパイプライン本体（トレンド取得〜output/保存〜git push〜ログ保存）を実行する。
 
 ## 未確定事項（次に決めること）
 
-- 各APIキーの取得と環境変数への設定（Gemini / Grok / 画像補正API）
+- 各APIキーの取得と環境変数への設定（Gemini / Grok / Stability AI）
 - いいね数の取得方法（X API読み取り連携 or 手動入力）
-- 画像補正APIの最終選定（Stability AI / Photoroom 等の実際の比較検証）

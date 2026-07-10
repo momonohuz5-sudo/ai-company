@@ -21,7 +21,7 @@
 |---|---|
 | `GEMINI_API_KEY` | Gemini画像生成 |
 | `GROK_API_KEY` | Grok画像生成（構図・ポーズのバリエーション） |
-| `RETOUCH_API_KEY` | 画像補正API（Stability AI / Photoroom等、未選定） |
+| `STABILITY_API_KEY` | 画像補正API（Stability AI、Fast Upscaleで高品質化） |
 
 ## 実行
 
@@ -36,9 +36,8 @@ Claude Code の Routine（毎朝の定期トリガー）から呼び出す想定
 
 ## 現状
 
-まだ画像生成・補正のAPI呼び出しは未実装（雛形のみ）。
-実際のAPIキーが揃った段階で `image_gen.py` / `retouch.py` の
-TODO部分を実装する。`repo_save.py` は実装済み。
+`retouch.py`（Stability AI Fast Upscale）と `repo_save.py` は実装済み。
+`image_gen.py`（Gemini/Grok呼び出し）はAPIキーが揃い次第、実装する。
 
 ## 将来的な移行
 

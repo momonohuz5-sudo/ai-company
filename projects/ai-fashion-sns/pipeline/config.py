@@ -6,7 +6,9 @@ load_dotenv()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GROK_API_KEY = os.environ.get("GROK_API_KEY", "")
-RETOUCH_API_KEY = os.environ.get("RETOUCH_API_KEY", "")
+
+# 画像補正・高品質化API。月額最低料金のないStability AI(従量課金)を採用。
+STABILITY_API_KEY = os.environ.get("STABILITY_API_KEY", "")
 
 # 保存先: 当面はGoogleドライブ等の外部サービスではなく、このリポジトリ内に
 # 画像を保存してgit pushする方式にする(認証設定が不要ですぐ動かせるため)。
