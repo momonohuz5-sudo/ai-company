@@ -7,6 +7,11 @@ from app.scrapers.base import ReviewScraper
 from app.services import search_service
 
 
+@pytest.fixture(autouse=True)
+def reset_scrape_semaphore(monkeypatch):
+    monkeypatch.setattr(search_service, "_scrape_semaphore", None)
+
+
 class OkScraper(ReviewScraper):
     source = "ok-site"
 
@@ -118,3 +123,36 @@ async def test_search_all_dedups_across_sites(monkeypatch):
     )
     result = await search_service.search_all("ABC新宿", "あい")
     assert result.total_reviews == 1
+
+
+class ConcurrencyTrackingScraper(ReviewScraper):
+    source = "tracked-site"
+
+    def __init__(self, tracker: "dict"):
+        self.tracker = tracker
+
+    async def search_reviews(self, shop_name, therapist_name):
+        self.tracker["current"] += 1
+        self.tracker["peak"] = max(self.tracker["peak"], self.tracker["current"])
+        await asyncio.sleep(0.05)
+        self.tracker["current"] -= 1
+        return []
+
+
+@pytest.mark.asyncio
+async def test_concurrent_scrapes_are_capped_by_semaphore(monkeypatch):
+    settings = search_service.get_settings()
+    monkeypatch.setattr(settings, "max_concurrent_scrapes", 2)
+
+    tracker = {"current": 0, "peak": 0}
+    monkeypatch.setattr(
+        search_service,
+        "get_scrapers",
+        lambda: [ConcurrencyTrackingScraper(tracker)],
+    )
+
+    await asyncio.gather(
+        *(search_service.search_all("ABC新宿", "あい") for _ in range(5))
+    )
+
+    assert tracker["peak"] <= 2

@@ -12,6 +12,7 @@ class Settings:
     database_url: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
     cache_ttl_seconds: int = int(os.getenv("CACHE_TTL_SECONDS", str(6 * 60 * 60)))
     scraper_timeout_seconds: int = int(os.getenv("SCRAPER_TIMEOUT_SECONDS", "8"))
+    max_concurrent_scrapes: int = int(os.getenv("MAX_CONCURRENT_SCRAPES", "3"))
 
 
 @lru_cache

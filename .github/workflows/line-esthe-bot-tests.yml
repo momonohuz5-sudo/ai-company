@@ -1,0 +1,25 @@
+name: line-esthe-bot tests
+
+on:
+  push:
+    paths:
+      - "dev/line-esthe-bot/**"
+      - ".github/workflows/line-esthe-bot-tests.yml"
+  pull_request:
+    paths:
+      - "dev/line-esthe-bot/**"
+      - ".github/workflows/line-esthe-bot-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dev/line-esthe-bot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest tests/ -q

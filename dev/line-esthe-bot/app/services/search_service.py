@@ -10,6 +10,18 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Caps how many scrape operations (across all concurrent LINE requests) run
+# at once, so a burst of user messages doesn't hammer the target site with
+# unbounded parallel headless-browser sessions (spec section 33).
+_scrape_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_scrape_semaphore() -> asyncio.Semaphore:
+    global _scrape_semaphore
+    if _scrape_semaphore is None:
+        _scrape_semaphore = asyncio.Semaphore(get_settings().max_concurrent_scrapes)
+    return _scrape_semaphore
+
 
 def get_scrapers() -> list[ReviewScraper]:
     return [MenEstheScraper()]
@@ -19,9 +31,10 @@ async def _search_one(
     scraper: ReviewScraper, shop_name: str, therapist_name: str, timeout: int
 ) -> list[Review]:
     try:
-        return await asyncio.wait_for(
-            scraper.search_reviews(shop_name, therapist_name), timeout=timeout
-        )
+        async with _get_scrape_semaphore():
+            return await asyncio.wait_for(
+                scraper.search_reviews(shop_name, therapist_name), timeout=timeout
+            )
     except TimeoutError:
         logger.warning("scraper %s timed out after %ss", scraper.source, timeout)
         return []

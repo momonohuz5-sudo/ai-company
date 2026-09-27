@@ -206,3 +206,16 @@ gcloud run services update line-esthe-bot \
 ### 現在の問題点 / 未実装
 - Dockerビルドの実機検証は未実施（環境制約のため）。
 - Cloud Run最小インスタンス数を0にした場合のコールドスタート（Playwright起動込みで数秒〜十数秒）は考慮が必要。応答性重視なら`--min-instances 1`を検討。
+
+## 追加対応: アクセス負荷対策（仕様書33節）
+
+- `app/services/search_service.py`: `asyncio.Semaphore`で同時スクレイピング数の上限を設定（デフォルト3、`MAX_CONCURRENT_SCRAPES`で変更可）。複数ユーザーから同時にメッセージが来ても、対象サイトへの同時アクセス数が青天井にならないようにしている
+- 同一人物への検索はPhase 7のキャッシュで既に抑制済み
+
+## 追加対応: CI
+
+`.github/workflows/line-esthe-bot-tests.yml`で、`dev/line-esthe-bot/`配下への変更時に自動でテストを実行する（Playwrightの実ブラウザは使わずモックでテストしているため、CIでのブラウザインストールは不要）。
+
+## menethesteサイトアクセスについて
+
+men-esthe.jpの実アクセスには課金が必要とのことで、実際のセレクタ検証・実スクレイピング動作確認は別途準備が整い次第実施する。それまでは`app/scrapers/men_esthe.py`のプレースホルダーセレクタのままとなる。
