@@ -1,8 +1,18 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
+from app.db.database import init_db
 from app.line.webhook import router as line_router
 
-app = FastAPI(title="LINE Esthe Review Bot")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+
+
+app = FastAPI(title="LINE Esthe Review Bot", lifespan=lifespan)
 app.include_router(line_router)
 
 

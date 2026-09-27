@@ -6,6 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 
 from app.config import get_settings
 from app.line.client import push_text, reply_text
+from app.services.cache_service import get_cached_message, save_cache, save_reviews
 from app.services.gemini_summarizer import GeminiSummarizer
 from app.services.message_builder import build_summary_message
 from app.services.parser_service import ParseStatus, parse_query
@@ -62,6 +63,11 @@ async def handle_text_message(reply_token: str, user_id: str | None, text: str) 
         logger.warning("no user_id on event; cannot push search results")
         return
 
+    cached_message = await get_cached_message(query.shop_name, query.therapist_name)
+    if cached_message is not None:
+        await push_text(user_id, cached_message)
+        return
+
     try:
         search_result = await search_all(query.shop_name, query.therapist_name)
     except Exception:
@@ -74,10 +80,9 @@ async def handle_text_message(reply_token: str, user_id: str | None, text: str) 
         return
 
     if search_result.total_reviews == 0:
-        await push_text(
-            user_id,
-            NOT_FOUND_MESSAGE_TEMPLATE.format(therapist_name=query.therapist_name),
-        )
+        message = NOT_FOUND_MESSAGE_TEMPLATE.format(therapist_name=query.therapist_name)
+        await save_cache(query.shop_name, query.therapist_name, message, review_count=0)
+        await push_text(user_id, message)
         return
 
     try:
@@ -92,6 +97,10 @@ async def handle_text_message(reply_token: str, user_id: str | None, text: str) 
         return
 
     message = build_summary_message(query.therapist_name, summary)
+    await save_reviews(query.shop_name, query.therapist_name, search_result.reviews)
+    await save_cache(
+        query.shop_name, query.therapist_name, message, review_count=summary.review_count
+    )
     await push_text(user_id, message)
 
 

@@ -131,4 +131,29 @@ pytest tests/ -q
 
 ### 現在の問題点 / 未実装
 - Gemini無料枠のレート制限に達した場合のリトライ/待機処理は未実装。
-- キャッシュ（Phase 7）、デプロイ（Phase 8）は未着手。
+- デプロイ（Phase 8）は未着手。
+
+## Phase 7: SQLiteキャッシュ
+
+### 実装内容
+- `app/db/models.py`: 仕様書21節の`search_cache`・`reviews`テーブル（SQLAlchemy ORM）
+- `app/db/database.py`: 非同期エンジン/セッション、`init_db()`でテーブル自動作成
+- `app/services/cache_service.py`
+  - `get_cached_message(shop_name, therapist_name)`: 有効期限内（`expires_at > 現在時刻`）のキャッシュがあれば要約メッセージをそのまま返す
+  - `save_cache(...)`: `CACHE_TTL_SECONDS`（デフォルト6時間）後に失効するレコードを保存
+  - `save_reviews(...)`: 口コミ本文・出典URL・取得日時を内部保存用に記録（ユーザーには非表示、仕様書21・34節）
+- Webhookに統合
+  - 検索前にキャッシュを確認し、ヒットすればWeb検索・AI要約をスキップして即push（目標3秒以内）
+  - 検索結果（0件の場合も含む）をキャッシュに保存し、同じ組み合わせへの再アクセス負荷を抑制（仕様書33節）
+- `app/main.py`: FastAPIのlifespanで起動時に`init_db()`を実行しテーブルを作成
+
+### 動作確認方法
+```bash
+pytest tests/ -q
+```
+`tests/test_cache_service.py`でインメモリSQLiteを使い、キャッシュヒット/ミス/他セラピストとの非混同/期限切れを検証。
+`tests/test_handle_text_message.py::test_cache_hit_skips_search_and_pushes_cached_message`でWebhook全体のキャッシュ短絡フローを検証。
+
+### 現在の問題点 / 未実装
+- デプロイ（Phase 8: Cloud Run等への本番デプロイ設定）は未着手。
+- 本番ではSQLiteからPostgreSQLへの移行を想定（`DATABASE_URL`を変更するだけで対応できる設計）。
