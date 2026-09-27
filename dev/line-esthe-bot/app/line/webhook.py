@@ -6,6 +6,8 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 
 from app.config import get_settings
 from app.line.client import push_text, reply_text
+from app.services.gemini_summarizer import GeminiSummarizer
+from app.services.message_builder import build_summary_message
 from app.services.parser_service import ParseStatus, parse_query
 from app.services.search_service import search_all
 from app.utils.logger import get_logger
@@ -26,6 +28,8 @@ NOT_FOUND_MESSAGE_TEMPLATE = (
 SEARCH_FAILED_MESSAGE = (
     "現在口コミを取得できませんでした。少し時間を空けてもう一度試してみてね。"
 )
+
+summarizer = GeminiSummarizer()
 
 
 def verify_signature(body: bytes, signature: str | None) -> bool:
@@ -76,13 +80,19 @@ async def handle_text_message(reply_token: str, user_id: str | None, text: str) 
         )
         return
 
-    # Phase 3: search/dedup only. AI summarization lands in Phase 5; for now
-    # push back what was found so the pipeline is verifiable end-to-end.
-    await push_text(
-        user_id,
-        f"{query.therapist_name}さんの口コミが{search_result.total_reviews}件見つかったよ！"
-        "（要約は準備中）",
-    )
+    try:
+        summary = await summarizer.summarize(search_result.reviews)
+    except Exception:
+        logger.exception(
+            "summarize failed for shop=%s therapist=%s",
+            query.shop_name,
+            query.therapist_name,
+        )
+        await push_text(user_id, SEARCH_FAILED_MESSAGE)
+        return
+
+    message = build_summary_message(query.therapist_name, summary)
+    await push_text(user_id, message)
 
 
 @router.post("/webhook")

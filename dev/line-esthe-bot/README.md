@@ -97,4 +97,38 @@ pytest tests/ -q
 
 ### 現在の問題点 / 未実装
 - 類似度ベース（Embedding）の重複判定は未実装。
-- AI要約（Phase 5）、キャッシュ（Phase 7）、デプロイ（Phase 8）は未着手。
+- キャッシュ（Phase 7）、デプロイ（Phase 8）は未着手。
+
+## Phase 5: AI要約（Google Gemini API）
+
+仕様書ではOpenAI APIを想定していたが、運用コストを抑えるため無料枠のある
+**Google Gemini API**（`gemini-2.0-flash`）を採用（ユーザー確認済み）。
+将来OpenAI等へ切り替える場合も、`Summarizer`インターフェースの差し替えだけで済む構造にしてある。
+
+### 実装内容
+- `app/prompts/summary_prompt.txt`: 仕様書24節のシステムプロンプト＋40節のJSON出力形式
+- `app/services/summarizer.py`: `Summarizer`共通インターフェース、プロンプト組み立て
+- `app/services/gemini_summarizer.py`: Gemini REST APIを`httpx`で呼び出し、JSON応答をパース（```json``` フェンス除去にも対応）
+- `app/models/summary.py`: `SummaryResult(review_count, summary_points, mixed_opinion)`
+- `app/services/message_builder.py`: 仕様書5節・41節の件数別クロージング文言を生成
+  - 1件：「こんな口コミがみられたよ！」
+  - 2〜3件：「複数の口コミで〜という声が…」
+  - 4件以上：「という口コミが多くみられたよ！」
+  - 評価が分かれている場合：「評価が分かれているみたい！」
+- Webhookに統合。要約失敗時は仕様書29節の「取得できませんでした」メッセージにフォールバック
+
+### 必要な環境変数（追加）
+- `GEMINI_API_KEY`: [Google AI Studio](https://aistudio.google.com/)で無料発行
+- `GEMINI_MODEL`（デフォルト`gemini-2.0-flash`）
+
+### 動作確認方法
+```bash
+pytest tests/ -q
+```
+`tests/test_message_builder.py`で件数別の文言分岐、`tests/test_gemini_summarizer.py`でプロンプト組み立て・JSONパース（コードフェンス対応含む）、
+`tests/test_handle_text_message.py`で要約成功/失敗時のWebhook全体フローを検証。
+実際のAPI呼び出し確認は`GEMINI_API_KEY`設定後に別途実施する。
+
+### 現在の問題点 / 未実装
+- Gemini無料枠のレート制限に達した場合のリトライ/待機処理は未実装。
+- キャッシュ（Phase 7）、デプロイ（Phase 8）は未着手。

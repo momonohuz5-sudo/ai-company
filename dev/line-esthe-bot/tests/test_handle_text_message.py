@@ -3,6 +3,7 @@ import pytest
 from app.line import webhook
 from app.models.review import Review
 from app.models.search_result import SearchResult
+from app.models.summary import SummaryResult
 
 
 @pytest.mark.asyncio
@@ -56,7 +57,7 @@ async def test_no_results_pushes_not_found_message(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_results_found_pushes_count(monkeypatch):
+async def test_results_found_pushes_summary(monkeypatch):
     pushed = {}
 
     async def fake_search_all(shop_name, therapist_name):
@@ -75,15 +76,59 @@ async def test_results_found_pushes_count(monkeypatch):
             ],
         )
 
+    async def fake_summarize(reviews):
+        return SummaryResult(
+            review_count=1,
+            summary_points=["話しやすいという口コミがある"],
+            mixed_opinion=False,
+        )
+
     async def fake_push_text(user_id, text):
         pushed["text"] = text
 
     monkeypatch.setattr(webhook, "search_all", fake_search_all)
+    monkeypatch.setattr(webhook.summarizer, "summarize", fake_summarize)
     monkeypatch.setattr(webhook, "push_text", fake_push_text)
 
     await webhook.handle_text_message("token-1", "user-1", "ABC新宿 あい")
 
-    assert "1件見つかったよ" in pushed["text"]
+    assert "あいさんのレビューはこんな感じ！" in pushed["text"]
+    assert "話しやすいという口コミがある" in pushed["text"]
+
+
+@pytest.mark.asyncio
+async def test_summarize_failure_pushes_generic_error(monkeypatch):
+    pushed = {}
+
+    async def fake_search_all(shop_name, therapist_name):
+        return SearchResult(
+            shop_name=shop_name,
+            therapist_name=therapist_name,
+            reviews=[
+                Review(
+                    source="ok-site",
+                    shop_name=shop_name,
+                    therapist_name=therapist_name,
+                    text="話しやすかった",
+                    url=None,
+                    date=None,
+                )
+            ],
+        )
+
+    async def fake_summarize(reviews):
+        raise RuntimeError("boom")
+
+    async def fake_push_text(user_id, text):
+        pushed["text"] = text
+
+    monkeypatch.setattr(webhook, "search_all", fake_search_all)
+    monkeypatch.setattr(webhook.summarizer, "summarize", fake_summarize)
+    monkeypatch.setattr(webhook, "push_text", fake_push_text)
+
+    await webhook.handle_text_message("token-1", "user-1", "ABC新宿 あい")
+
+    assert pushed["text"] == webhook.SEARCH_FAILED_MESSAGE
 
 
 @pytest.mark.asyncio
