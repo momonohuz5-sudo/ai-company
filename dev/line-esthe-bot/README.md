@@ -102,7 +102,7 @@ pytest tests/ -q
 ## Phase 5: AI要約（Google Gemini API）
 
 仕様書ではOpenAI APIを想定していたが、運用コストを抑えるため無料枠のある
-**Google Gemini API**（`gemini-2.0-flash`）を採用（ユーザー確認済み）。
+**Google Gemini API**（`gemini-3.8-flash`）を採用（ユーザー確認済み）。
 将来OpenAI等へ切り替える場合も、`Summarizer`インターフェースの差し替えだけで済む構造にしてある。
 
 ### 実装内容
@@ -119,7 +119,7 @@ pytest tests/ -q
 
 ### 必要な環境変数（追加）
 - `GEMINI_API_KEY`: [Google AI Studio](https://aistudio.google.com/)で無料発行
-- `GEMINI_MODEL`（デフォルト`gemini-2.0-flash`）
+- `GEMINI_MODEL`（デフォルト`gemini-3.8-flash`）
 
 ### 動作確認方法
 ```bash
