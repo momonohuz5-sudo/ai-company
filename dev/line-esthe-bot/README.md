@@ -76,5 +76,25 @@ pytest tests/ -q
 
 ### 現在の問題点 / 未実装
 - men-esthe.jpの実際のセレクタは未検証（プレースホルダーのまま）。
-- 重複除去（仕様書22節）はPhase 4で実装予定。
+- AI要約（Phase 5）、キャッシュ（Phase 7）、デプロイ（Phase 8）は未着手。
+
+## Phase 4: 重複除去
+
+### 実装内容
+- `app/services/dedup_service.py`: 仕様書22節の重複除去ロジック
+  - 前後空白・改行・記号（句読点、感嘆符等）を正規化してから完全一致比較
+  - 空文字になった口コミ（記号のみ等）は除外
+  - サイトをまたいだ転載も検出（`source`ではなく本文で比較）
+  - Embeddingによる類似判定は将来拡張として未実装（構造上追加しやすい形にしてある）
+- `search_service.search_all`に組み込み、全サイトの結果を集約後に重複除去してから`SearchResult`を返す
+
+### 動作確認方法
+```bash
+pytest tests/ -q
+```
+`tests/test_dedup_service.py`で完全一致・空白差分・記号差分・サイト跨ぎ重複・空文字除外を検証。
+`tests/test_search_service.py::test_search_all_dedups_across_sites`で検索パイプライン全体への組み込みを検証。
+
+### 現在の問題点 / 未実装
+- 類似度ベース（Embedding）の重複判定は未実装。
 - AI要約（Phase 5）、キャッシュ（Phase 7）、デプロイ（Phase 8）は未着手。

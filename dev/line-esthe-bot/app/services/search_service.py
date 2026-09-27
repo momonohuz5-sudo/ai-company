@@ -5,6 +5,7 @@ from app.models.review import Review
 from app.models.search_result import SearchResult
 from app.scrapers.base import ReviewScraper
 from app.scrapers.men_esthe import MenEstheScraper
+from app.services.dedup_service import dedup_reviews
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,6 +42,7 @@ async def search_all(shop_name: str, therapist_name: str) -> SearchResult:
     )
 
     reviews = [review for site_reviews in results for review in site_reviews]
+    deduped = dedup_reviews(reviews)
     return SearchResult(
-        shop_name=shop_name, therapist_name=therapist_name, reviews=reviews
+        shop_name=shop_name, therapist_name=therapist_name, reviews=deduped
     )

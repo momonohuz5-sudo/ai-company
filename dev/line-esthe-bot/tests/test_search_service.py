@@ -90,3 +90,31 @@ async def test_search_all_returns_empty_when_nothing_found(monkeypatch):
     monkeypatch.setattr(search_service, "get_scrapers", lambda: [EmptyScraper()])
     result = await search_service.search_all("ABC新宿", "あい")
     assert result.total_reviews == 0
+
+
+class DuplicateScraper(ReviewScraper):
+    def __init__(self, source: str):
+        self.source = source
+
+    async def search_reviews(self, shop_name, therapist_name):
+        return [
+            Review(
+                source=self.source,
+                shop_name=shop_name,
+                therapist_name=therapist_name,
+                text="話しやすかった！",
+                url=None,
+                date=None,
+            )
+        ]
+
+
+@pytest.mark.asyncio
+async def test_search_all_dedups_across_sites(monkeypatch):
+    monkeypatch.setattr(
+        search_service,
+        "get_scrapers",
+        lambda: [DuplicateScraper("site-a"), DuplicateScraper("site-b")],
+    )
+    result = await search_service.search_all("ABC新宿", "あい")
+    assert result.total_reviews == 1
