@@ -30,8 +30,8 @@ LINE Developers コンソールでWebhook URLを `https://<host>/webhook` に設
 公式アカウントへメッセージを送ると固定文言が返信される。
 
 ### 現在の問題点 / 未実装
-- Phase 3以降（口コミ検索、AI要約、キャッシュ、デプロイ）は未着手。
-- DB・スクレイパーはディレクトリのみ用意（ロジック未実装）。
+- Phase 4以降（口コミ本文の高度な抽出/整形、AI要約、キャッシュ、デプロイ）は未着手。
+- DBはディレクトリのみ用意（ロジック未実装）。
 
 ## Phase 2: 入力解析（店舗名 + セラピスト名）
 
@@ -51,3 +51,30 @@ pytest tests/ -q
 ```
 LINEから `ABC新宿 あい` 等を送信し、店舗名・セラピスト名が正しく解析されて
 返信されることを確認する。
+
+## Phase 3: 口コミ検索（men-esthe.jp / 共通Interface）
+
+### 実装内容
+- `app/scrapers/base.py`: `ReviewScraper` 共通インターフェース（仕様書37節）
+  - サイト追加時にBot本体を変更せずに済むよう、`search_reviews(shop_name, therapist_name) -> list[Review]` のみを要求
+- `app/scrapers/men_esthe.py`: Playwrightベースの実装
+  - **注意**: men-esthe.jpへの実アクセス許可・HTML構造の確認は未実施のため、セレクタはプレースホルダー。例外時は空リストを返し全体の処理を止めない設計にしている。実運用前に必ず実サイトで検証・調整すること
+- `app/models/review.py` / `app/models/search_result.py`: 仕様書38・39節のモデル
+- `app/services/search_service.py`: 複数サイトを `asyncio.gather` で並列実行し、サイトごとにタイムアウト（`SCRAPER_TIMEOUT_SECONDS`、デフォルト8秒）を設定。1サイトが失敗/タイムアウトしても他の結果で処理継続（仕様書18・29節）
+- Webhookは検索結果を`push_text`でユーザーへ送信（reply tokenは検索の待ち時間中に失効し得るため、仕様書15節の設計通りpushに変更）
+  - 0件 → 仕様書26節の「見つけられなかったよ」メッセージ
+  - 全サイト失敗 → 仕様書29節の「取得できませんでした」メッセージ
+  - 見つかった場合 → 件数を表示（要約はPhase 5で実装予定、暫定メッセージ）
+
+### 動作確認方法
+```bash
+pytest tests/ -q
+```
+`tests/test_search_service.py`ではモックScraperで並列実行・タイムアウト・失敗時スキップを検証。
+`tests/test_handle_text_message.py`ではWebhookのハンドラ全体のフローを検証。
+実サイトへの疎通確認は、許可取得・セレクタ調整後に別途実施する。
+
+### 現在の問題点 / 未実装
+- men-esthe.jpの実際のセレクタは未検証（プレースホルダーのまま）。
+- 重複除去（仕様書22節）はPhase 4で実装予定。
+- AI要約（Phase 5）、キャッシュ（Phase 7）、デプロイ（Phase 8）は未着手。
