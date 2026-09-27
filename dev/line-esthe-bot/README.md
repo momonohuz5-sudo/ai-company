@@ -155,5 +155,54 @@ pytest tests/ -q
 `tests/test_handle_text_message.py::test_cache_hit_skips_search_and_pushes_cached_message`でWebhook全体のキャッシュ短絡フローを検証。
 
 ### 現在の問題点 / 未実装
-- デプロイ（Phase 8: Cloud Run等への本番デプロイ設定）は未着手。
 - 本番ではSQLiteからPostgreSQLへの移行を想定（`DATABASE_URL`を変更するだけで対応できる設計）。
+
+## Phase 8: クラウドデプロイ（Google Cloud Run）
+
+開発者PC非依存（仕様書13節）を満たすため、Google Cloud Runへのデプロイを想定。
+Playwright（Chromium）をコンテナに含める必要があるため、公式イメージ`mcr.microsoft.com/playwright/python`をベースにしている。
+
+### 実装内容
+- `Dockerfile`: Playwright公式イメージベース（Chromium同梱、apt依存の手動管理が不要）。`playwright`のバージョンをベースイメージのタグ（v1.47.0）に固定してChromiumとの不一致を防止
+- `.dockerignore`: `.env`・テスト・開発用ファイルを除外
+- Cloud Runは`PORT`環境変数を自動注入するため、`CMD`はそれを読んでuvicornを起動する構成
+
+### デプロイ手順（gcloud CLIが使える環境で実行）
+```bash
+# 1. Google Cloudプロジェクトを設定
+gcloud config set project <YOUR_PROJECT_ID>
+
+# 2. Artifact Registry等へビルド&デプロイ（ソースから直接）
+gcloud run deploy line-esthe-bot \
+  --source . \
+  --region asia-northeast1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --memory 1Gi \
+  --timeout 30 \
+  --set-env-vars "GEMINI_MODEL=gemini-3.8-flash,CACHE_TTL_SECONDS=21600,SCRAPER_TIMEOUT_SECONDS=8"
+
+# 3. Secret（トークン類）はSecret Managerで管理し、--set-secrets で注入するのが推奨（直書き厳禁、仕様書31節）
+gcloud secrets create line-channel-access-token --data-file=- <<< "<TOKEN>"
+gcloud secrets create line-channel-secret --data-file=- <<< "<SECRET>"
+gcloud secrets create gemini-api-key --data-file=- <<< "<GEMINI_KEY>"
+
+gcloud run services update line-esthe-bot \
+  --region asia-northeast1 \
+  --set-secrets "LINE_CHANNEL_ACCESS_TOKEN=line-channel-access-token:latest,LINE_CHANNEL_SECRET=line-channel-secret:latest,GEMINI_API_KEY=gemini-api-key:latest"
+
+# 4. デプロイ完了後に発行されるURL（https://xxx-yyy.a.run.app）の末尾に /webhook を付けて
+#    LINE Developersコンソールの Webhook URL に設定する
+```
+
+- SQLiteはCloud Runのコンテナ再起動でリセットされる（永続ディスクではないため）。本番運用では`DATABASE_URL`をCloud SQL(PostgreSQL)等に向けるだけで移行可能な設計にしてある（仕様書12節）
+- Cloud Runはリクエスト処理中のみ課金されるため、運用コストを抑えられる（仕様書45節の最優先事項に合致）
+
+### 動作確認方法
+このクラウド環境（Claude Codeのセッション）にはDockerデーモンがないため、`docker build`によるローカル検証はできていない。
+デプロイ実行者の手元、またはCloud Build（`gcloud run deploy --source .`は自動でCloud Buildを使う）でのビルド確認が必要。
+デプロイ後は、LINE公式アカウントへ「店舗名 セラピスト名」を送信し、15秒前後で要約が返ってくることを確認する。
+
+### 現在の問題点 / 未実装
+- Dockerビルドの実機検証は未実施（環境制約のため）。
+- Cloud Run最小インスタンス数を0にした場合のコールドスタート（Playwright起動込みで数秒〜十数秒）は考慮が必要。応答性重視なら`--min-instances 1`を検討。
