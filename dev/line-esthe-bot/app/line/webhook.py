@@ -6,10 +6,18 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 
 from app.config import get_settings
 from app.line.client import reply_text
+from app.services.parser_service import ParseStatus, parse_query
 from app.utils.logger import get_logger
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+MISSING_SHOP_MESSAGE = "店舗名も一緒に送ってね！"
+UNPARSEABLE_MESSAGE = (
+    "店舗名とセラピスト名を一緒に送ってね！\n"
+    "例：\n"
+    "ABC新宿 あい"
+)
 
 
 def verify_signature(body: bytes, signature: str | None) -> bool:
@@ -24,8 +32,23 @@ def verify_signature(body: bytes, signature: str | None) -> bool:
 
 
 async def handle_text_message(reply_token: str, text: str) -> None:
-    # Phase 1: fixed reply only. Parsing/search/summary land in later phases.
-    await reply_text(reply_token, f"メッセージを受け取ったよ！\n「{text}」")
+    result = parse_query(text)
+
+    if result.status == ParseStatus.UNPARSEABLE:
+        await reply_text(reply_token, UNPARSEABLE_MESSAGE)
+        return
+
+    if result.status == ParseStatus.MISSING_SHOP:
+        await reply_text(reply_token, MISSING_SHOP_MESSAGE)
+        return
+
+    # Phase 2: parsing only. Search/scrape/summary land in later phases.
+    query = result.query
+    assert query is not None
+    await reply_text(
+        reply_token,
+        f"店舗名：{query.shop_name}\nセラピスト名：{query.therapist_name}\nで検索するね！",
+    )
 
 
 @router.post("/webhook")
